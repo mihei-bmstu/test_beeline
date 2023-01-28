@@ -1,12 +1,17 @@
 package system
 
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
+import functions.LoadFile
 
 object Parameters {
+  val tables: Seq[String] = Seq("Customer", "Order", "Product")
   val pathCustomer = "src/main/resources/customer.csv"
   val pathOrder = "src/main/resources/order.csv"
   val pathProduct = "src/main/resources/product.csv"
-  val pathTables: Seq[String] = Seq(pathCustomer, pathOrder, pathProduct)
+  val pathTables: Map[String, String] = Map("Customer" -> pathCustomer,
+                                            "Order" -> pathOrder,
+                                            "Product" -> pathProduct)
 
   val schemaCustomer: StructType = StructType(
     StructField("ID", IntegerType, nullable = false) ::
@@ -33,11 +38,16 @@ object Parameters {
       Nil)
 
   val schemes: Map[String, StructType] = Map(
-    pathCustomer -> schemaCustomer,
-    pathOrder -> schemaOrder,
-    pathProduct -> schemaOrder
+    "Customer" -> schemaCustomer,
+    "Order" -> schemaOrder,
+    "Product" -> schemaProduct
   )
 
-
+  def initTables(implicit spark: SparkSession): Unit = {
+    tables.foreach(table => LoadFile.load(table,
+      pathTables.getOrElse(table, "No such table"),
+      schemes(table))
+    )
+  }
 
 }

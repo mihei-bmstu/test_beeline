@@ -3,27 +3,28 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.expressions.Window
 import system.Parameters
-import functions.LoadFile
 
 object Boot {
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("com").setLevel(Level.ERROR)
 
-    val spark = SparkSession.builder()
+    implicit val spark: SparkSession = SparkSession.builder()
       .master("local[*]")
       .appName("test_Beeline")
       .getOrCreate()
 
     import spark.implicits._
 
-    val dfCustomer = LoadFile.load(spark, Parameters.pathCustomer, Parameters.schemaCustomer)
+    Parameters.initTables
+
+    val dfCustomer = spark.table("Customer")
       .select('ID.as("Customer_ID"), 'Name.as("Customer_name"))
 
-    val dfOrder = LoadFile.load(spark, Parameters.pathOrder, Parameters.schemaOrder)
+    val dfOrder = spark.table("Order")
       .filter("status = 'delivered' ")
 
-    val dfProduct = LoadFile.load(spark, Parameters.pathProduct, Parameters.schemaProduct)
+    val dfProduct = spark.table("Product")
       .select('ID.as("Product_ID"), 'Name.as("Product_name"))
 
     val window = Window.partitionBy('Customer_ID).orderBy('SumProducts.desc)
